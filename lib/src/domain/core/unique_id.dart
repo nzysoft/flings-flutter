@@ -11,5 +11,10 @@ class UniqueId {
     return UniqueId._(Uuid().v1());
   }
 
+  /// Creates a [UniqueId] from an [input] which we already know is unique.
+  factory UniqueId.fromInfrastructure(String input) {
+    return UniqueId._(input);
+  }
+
   UniqueId._(this.value);
 }
