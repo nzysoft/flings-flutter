@@ -10,11 +10,12 @@ import '../../domain/core/unique_id.dart';
 part 'todo_model.g.dart';
 
 /// Model for storing Todos in [Hive]
+@immutable
 @HiveType(typeId: 0)
 class TodoModel {
   /// The todo name
   @HiveField(1)
-  String name;
+  final String name;
 
   /// The status of the todo
   ///
@@ -22,7 +23,7 @@ class TodoModel {
   /// 1: complete
   /// -1: cancelled
   @HiveField(2)
-  int status;
+  final int status;
 
   /// Creates a [TodoModel]
   TodoModel({
@@ -70,4 +71,17 @@ class TodoModel {
       status: modelStatus,
     );
   }
+
+  @override
+  String toString() => 'TodoModel(name: $name, status: $status)';
+
+  @override
+  bool operator ==(Object o) {
+    if (identical(this, o)) return true;
+
+    return o is TodoModel && o.name == name && o.status == status;
+  }
+
+  @override
+  int get hashCode => name.hashCode ^ status.hashCode;
 }
