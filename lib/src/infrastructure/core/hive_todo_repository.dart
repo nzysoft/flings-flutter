@@ -29,7 +29,7 @@ class HiveTodoRepository implements ITodoRepository {
   @override
   Future<Either<TodoFailure, List<Todo>>> get allTodos async {
     return right(
-      _box.toMap().entries.map((e) => e.value.toDomain(e.key)),
+      _box.toMap().entries.map((e) => e.value.toDomain(e.key)).toList(),
     );
   }
 
