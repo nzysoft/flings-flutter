@@ -25,6 +25,35 @@ void main() {
       repository = HiveTodoRepository(box);
     });
 
+    group('getTodo', () {
+      test('returns an error if the todo does not exist', () async {
+        const id = 'id';
+        when(box.containsKey(id)).thenReturn(false);
+
+        expect(
+          await repository.getTodo(UniqueId.fromInfrastructure(id)),
+          equals(Left(TodoFailure.doesNotExist())),
+        );
+      });
+
+      test('returns the todo if it does exist', () async {
+        const id = 'id';
+        when(box.containsKey(id)).thenReturn(true);
+        final tTodo = Todo(
+          id: UniqueId.fromInfrastructure(id),
+          name: TodoName('name'),
+          status: TodoStatus.incomplete,
+        );
+
+        when(box.get('id')).thenReturn(TodoModel(name: 'name', status: 0));
+
+        expect(
+          await repository.getTodo(UniqueId.fromInfrastructure(id)),
+          equals(right(tTodo)),
+        );
+      });
+    });
+
     group('addTodo', () {
       test('returns an error if the todo already exists', () async {
         const id = 'id';

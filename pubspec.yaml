@@ -10,7 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  bloc: ^6.1.1
   dominion: ^0.1.0
+  flutter_bloc: ^6.1.1
   freezed_annotation: ^0.12.0
   get_it: ^5.0.3
   hive: ^1.4.4+1
@@ -21,6 +23,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  bloc_test: ^7.1.0
   build_runner: ^1.10.11
   effective_dart: ^1.3.0
   freezed: ^0.12.7

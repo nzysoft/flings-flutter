@@ -7,6 +7,7 @@ import 'package:injectable/injectable.dart';
 import '../../domain/core/i_todo_repository.dart';
 import '../../domain/core/todo.dart';
 import '../../domain/core/todo_failure.dart';
+import '../../domain/core/unique_id.dart';
 import 'todo_model.dart';
 
 /// Implementation of [ITodoRepository] using [Hive]
@@ -16,6 +17,16 @@ class HiveTodoRepository implements ITodoRepository {
 
   /// Creates a [HiveTodoRepository]
   const HiveTodoRepository(this._box);
+
+  @override
+  Future<Either<TodoFailure, Todo>> getTodo(UniqueId id) async {
+    if (!_box.containsKey(id.value)) {
+      return left(TodoFailure.doesNotExist());
+    } else {
+      final todo = await _box.get(id.value);
+      return right(todo.toDomain(id.value));
+    }
+  }
 
   @override
   Future<Either<TodoFailure, Unit>> addTodo(Todo todo) async {

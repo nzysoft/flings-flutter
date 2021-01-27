@@ -4,9 +4,13 @@ import 'package:dominion/dominion.dart';
 // 🌎 Project imports:
 import 'todo.dart';
 import 'todo_failure.dart';
+import 'unique_id.dart';
 
 /// Interface for working with [Todo]s
 abstract class ITodoRepository {
+  /// Returns the [Todo] with the given [id].
+  Future<Either<TodoFailure, Todo>> getTodo(UniqueId id);
+
   /// Adds a new [todo]
   Future<Either<TodoFailure, Unit>> addTodo(Todo todo);
 
