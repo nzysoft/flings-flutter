@@ -1,16 +1,12 @@
-// 🐦 Flutter imports:
-import 'package:flutter/foundation.dart';
-
 // 📦 Package imports:
-import 'package:dominion/dominion.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 
 // 🌎 Project imports:
 import 'package:flings/src/domain/core/todo.dart';
-import 'package:flings/src/domain/core/todo_failure.dart';
 import 'package:flings/src/domain/core/todo_name.dart';
 import 'package:flings/src/domain/core/unique_id.dart';
+import 'package:flings/src/infrastructure/core/errors.dart';
 import 'package:flings/src/infrastructure/core/hive_todo_repository.dart';
 import 'package:flings/src/infrastructure/core/todo_model.dart';
 import 'mock_todo_box.dart';
@@ -26,17 +22,17 @@ void main() {
     });
 
     group('getTodo', () {
-      test('returns an error if the todo does not exist', () async {
+      test('throws an error if the todo does not exist', () {
         const id = 'id';
         when(box.containsKey(id)).thenReturn(false);
 
         expect(
-          await repository.getTodo(UniqueId.fromInfrastructure(id)),
-          equals(Left(TodoFailure.doesNotExist())),
+          () => repository.getTodo(UniqueId.fromInfrastructure(id)),
+          throwsA(isA<DoesNotExistError>()),
         );
       });
 
-      test('returns the todo if it does exist', () async {
+      test('returns the todo if it does exist', () {
         const id = 'id';
         when(box.containsKey(id)).thenReturn(true);
         final tTodo = Todo(
@@ -48,14 +44,14 @@ void main() {
         when(box.get('id')).thenReturn(TodoModel(name: 'name', status: 0));
 
         expect(
-          await repository.getTodo(UniqueId.fromInfrastructure(id)),
-          equals(right(tTodo)),
+          repository.getTodo(UniqueId.fromInfrastructure(id)),
+          equals(tTodo),
         );
       });
     });
 
     group('addTodo', () {
-      test('returns an error if the todo already exists', () async {
+      test('throws an error if the todo already exists', () {
         const id = 'id';
         when(box.containsKey(id)).thenReturn(true);
         final tTodo = Todo(
@@ -65,14 +61,14 @@ void main() {
         );
 
         expect(
-          await repository.addTodo(tTodo),
-          equals(Left<TodoFailure, Unit>(TodoFailure.alreadyExists())),
+          () => repository.addTodo(tTodo),
+          throwsA(isA<AlreadyExistsError>()),
         );
 
         verifyNever(box.put(id, TodoModel.fromDomain(tTodo)));
       });
 
-      test('succeeds when the todo does not already exist', () async {
+      test('succeeds when the todo does not already exist', () {
         const id = 'id';
         when(box.containsKey(id)).thenReturn(false);
         final tTodo = Todo(
@@ -81,48 +77,14 @@ void main() {
           status: TodoStatus.incomplete,
         );
 
-        expect(
-          await repository.addTodo(tTodo),
-          equals(Right<TodoFailure, Unit>(unit)),
-        );
+        repository.addTodo(tTodo);
 
         verify(box.put(id, TodoModel.fromDomain(tTodo)));
       });
     });
 
-    group('allTodos', () {
-      test('returns todos successfully', () async {
-        final tModels = <String, TodoModel>{
-          'id': TodoModel(name: 'name', status: 0),
-        };
-        when(box.toMap()).thenReturn(tModels);
-
-        final expected = <Todo>[
-          Todo(
-            id: UniqueId.fromInfrastructure('id'),
-            name: TodoName('name'),
-            status: TodoStatus.incomplete,
-          ),
-        ];
-
-        final result = await repository.allTodos;
-
-        expect(result, isA<Right<TodoFailure, List<Todo>>>());
-
-        expect(
-          listEquals(
-            (result as Right<TodoFailure, List<Todo>>).value,
-            expected,
-          ),
-          isTrue,
-        );
-
-        verify(box.toMap());
-      });
-    });
-
     group('deleteTodo', () {
-      test('deleting a todo that does not exist returns an error', () async {
+      test('deleting a todo that does not exist throws an error', () {
         const id = 'id';
         when(box.containsKey(id)).thenReturn(false);
 
@@ -133,37 +95,31 @@ void main() {
         );
 
         expect(
-          await repository.deleteTodo(tTodo),
-          equals(Left<TodoFailure, Unit>(TodoFailure.doesNotExist())),
+          () => repository.deleteTodo(tTodo),
+          throwsA(isA<DoesNotExistError>()),
         );
 
         verifyNever(box.delete(id));
       });
 
-      test(
-        'deleting a todo that does exist completes successfully',
-        () async {
-          const id = 'id';
-          when(box.containsKey(id)).thenReturn(true);
+      test('deleting a todo that does exist completes successfully', () {
+        const id = 'id';
+        when(box.containsKey(id)).thenReturn(true);
 
-          final tTodo = Todo(
-            id: UniqueId.fromInfrastructure(id),
-            name: TodoName('name'),
-            status: TodoStatus.incomplete,
-          );
+        final tTodo = Todo(
+          id: UniqueId.fromInfrastructure(id),
+          name: TodoName('name'),
+          status: TodoStatus.incomplete,
+        );
 
-          expect(
-            await repository.deleteTodo(tTodo),
-            equals(Right<TodoFailure, Unit>(unit)),
-          );
+        repository.deleteTodo(tTodo);
 
-          verify(box.delete(id));
-        },
-      );
+        verify(box.delete(id));
+      });
     });
 
     group('updateTodo', () {
-      test('updating a todo that does not exist returns an error', () async {
+      test('updating a todo that does not exist returns an error', () {
         const id = 'id';
         when(box.containsKey(id)).thenReturn(false);
 
@@ -174,33 +130,27 @@ void main() {
         );
 
         expect(
-          await repository.updateTodo(tTodo),
-          equals(Left<TodoFailure, Unit>(TodoFailure.doesNotExist())),
+          () => repository.updateTodo(tTodo),
+          throwsA(isA<DoesNotExistError>()),
         );
 
         verifyNever(box.put(id, TodoModel.fromDomain(tTodo)));
       });
 
-      test(
-        'updating a todo that does exist completes successfully',
-        () async {
-          const id = 'id';
-          when(box.containsKey(id)).thenReturn(true);
+      test('updating a todo that does exist completes successfully', () {
+        const id = 'id';
+        when(box.containsKey(id)).thenReturn(true);
 
-          final tTodo = Todo(
-            id: UniqueId.fromInfrastructure(id),
-            name: TodoName('name'),
-            status: TodoStatus.incomplete,
-          );
+        final tTodo = Todo(
+          id: UniqueId.fromInfrastructure(id),
+          name: TodoName('name'),
+          status: TodoStatus.incomplete,
+        );
 
-          expect(
-            await repository.updateTodo(tTodo),
-            equals(Right<TodoFailure, Unit>(unit)),
-          );
+        repository.updateTodo(tTodo);
 
-          verify(box.put(id, TodoModel.fromDomain(tTodo)));
-        },
-      );
+        verify(box.put(id, TodoModel.fromDomain(tTodo)));
+      });
     });
   });
 }

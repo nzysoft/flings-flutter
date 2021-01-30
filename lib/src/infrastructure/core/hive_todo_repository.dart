@@ -1,13 +1,12 @@
 // 📦 Package imports:
-import 'package:dartz/dartz.dart';
 import 'package:hive/hive.dart';
 import 'package:injectable/injectable.dart';
 
 // 🌎 Project imports:
 import '../../domain/core/i_todo_repository.dart';
 import '../../domain/core/todo.dart';
-import '../../domain/core/todo_failure.dart';
 import '../../domain/core/unique_id.dart';
+import 'errors.dart';
 import 'todo_model.dart';
 
 /// Implementation of [ITodoRepository] using [Hive]
@@ -19,46 +18,47 @@ class HiveTodoRepository implements ITodoRepository {
   const HiveTodoRepository(this._box);
 
   @override
-  Future<Either<TodoFailure, Todo>> getTodo(UniqueId id) async {
+  Todo getTodo(UniqueId id) {
     if (!_box.containsKey(id.value)) {
-      return left(TodoFailure.doesNotExist());
-    } else {
-      final todo = await _box.get(id.value);
-      return right(todo.toDomain(id.value));
+      throw DoesNotExistError();
     }
+    return _box.get(id.value).toDomain(id.value);
   }
 
   @override
-  Future<Either<TodoFailure, Unit>> addTodo(Todo todo) async {
+  void addTodo(Todo todo) {
     if (_box.containsKey(todo.id.value)) {
-      return left(TodoFailure.alreadyExists());
+      throw AlreadyExistsError();
     }
-    await _box.put(todo.id.value, TodoModel.fromDomain(todo));
-    return right(unit);
+    _box.put(todo.id.value, TodoModel.fromDomain(todo));
   }
 
   @override
-  Future<Either<TodoFailure, List<Todo>>> get allTodos async {
-    return right(
-      _box.toMap().entries.map((e) => e.value.toDomain(e.key)).toList(),
-    );
+  Stream<List<Todo>> get allTodos {
+    return _box.watch().map(
+          (_) => _box
+              .toMap()
+              .entries
+              .map(
+                (e) => e.value.toDomain(e.key),
+              )
+              .toList(),
+        );
   }
 
   @override
-  Future<Either<TodoFailure, Unit>> deleteTodo(Todo todo) async {
+  void deleteTodo(Todo todo) {
     if (!_box.containsKey(todo.id.value)) {
-      return left(TodoFailure.doesNotExist());
+      throw DoesNotExistError();
     }
-    await _box.delete(todo.id.value);
-    return right(unit);
+    _box.delete(todo.id.value);
   }
 
   @override
-  Future<Either<TodoFailure, Unit>> updateTodo(Todo todo) async {
+  void updateTodo(Todo todo) {
     if (!_box.containsKey(todo.id.value)) {
-      return left(TodoFailure.doesNotExist());
+      throw DoesNotExistError();
     }
-    await _box.put(todo.id.value, TodoModel.fromDomain(todo));
-    return right(unit);
+    _box.put(todo.id.value, TodoModel.fromDomain(todo));
   }
 }
